@@ -6,7 +6,7 @@ import time
 
 import tensorflow as tf
 
-from abstract_inference_service import AbstractInferenceService
+from .abstract_inference_service import AbstractInferenceService
 
 
 class TensorFlowInferenceService(AbstractInferenceService):
@@ -133,7 +133,10 @@ class TensorFlowInferenceService(AbstractInferenceService):
           self.load_saved_model_version(model_version)
 
   def load_saved_model_version(self, model_version):
-    session = tf.Session(graph=tf.Graph())
+    config = tf.ConfigProto(allow_soft_placement=True)
+    config.gpu_options.allow_growth = True
+
+    session = tf.Session(graph=tf.Graph(), config=config)
     self.version_session_map[str(model_version)] = session
     self.model_version_list.append(model_version)
 
@@ -142,7 +145,7 @@ class TensorFlowInferenceService(AbstractInferenceService):
         model_version, model_file_path))
     meta_graph = tf.saved_model.loader.load(
         session, [tf.saved_model.tag_constants.SERVING], model_file_path)
-    self.model_graph_signature = meta_graph.signature_def.items()[0][1]
+    self.model_graph_signature = list(meta_graph.signature_def.items())[0][1]
 
   def get_one_model_version(self):
     current_model_versions_string = os.listdir(self.model_base_path)
